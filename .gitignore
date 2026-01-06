@@ -1,2 +1,5 @@
 # 망계획 제외
 table.csv
+
+#캐시 제외
+__pycache__

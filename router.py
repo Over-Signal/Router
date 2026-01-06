@@ -10,7 +10,7 @@ class link:
         self.window = tk
         # self.table = table.table()
         # self.table.load_table_file()
-        # self.port = self.open_serial(port, boardrate, bootWaitingTime)
+        self.port = self.open_serial(port, boardrate, bootWaitingTime)
         self.nodeId=0
         self.nodeName=''
         self.ip=[]
@@ -19,13 +19,14 @@ class link:
 
     def open_serial(self, port:str, boardrate:int, bootWaitingTime:int = 2) -> serial.Serial:
         try:
-            self.port = serial.Serial(port, boardrate)
+            openPort = serial.Serial(port, boardrate)
         
         except:
             print("포트 open 불가")
             exit()
         
-        time.sleep(2)
+        time.sleep(bootWaitingTime)
+        return openPort
 
     def set_my_node(self, nodeID:int) -> None:
         '''
@@ -54,8 +55,9 @@ class link:
     def send_telegram(self):
         text=StringVar()
         text = self.telegram.get('1.0', END) #자동으로 개행문자 삽입됨.
+        self.port.write(text.encode('utf-8'))
         self.telegram.delete('1.0', END)
-        print(list(text))
+        #print(list(text))
 
     def set_window(self):
         '''
@@ -69,18 +71,38 @@ class link:
         Button(self.window, text='전송', width=10, command=self.send_telegram).grid(row=2, column=0)
         Button(self.window, text='종료', width=10, command=self.close).grid(row=3, column=0)
         
-
-    def close_serial(self):
-        self.port.close()
     
     def close(self):
-        #self.close_serial()
+        self.port.close()
+        self.runningFlag=False
         exit()
+
+    def receive_routine(self):
+        while self.runningFlag:
+            try:
+                if self.port.in_waiting > 0:
+                    time.sleep(0.03)#30ms
+                    print(self.port.in_waiting) 
+                    raw=self.port.read_until()
+                    
+                    data = raw[:-2].decode()
+                    print(data)
+                    
+                    
+            except:
+                print('수신에러')
+                
+            time.sleep(0.01)#10ms
+
+    def run_receiver(self):
+        receiver = threading.Thread(target=self.receive_routine, daemon=True)
+        receiver.start()
 
 if __name__ == "__main__":
     win = Tk()
     li = link(win, 'COM5', 9600)
     li.set_window()
     #li.set_my_node(2)
+    li.run_receiver()
     win.mainloop()
     

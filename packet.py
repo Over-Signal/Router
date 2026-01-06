@@ -1,3 +1,5 @@
+import hashlib
+
 class packet:
     def __init__(self):
         #패킷 정보는 외부접근불가
@@ -13,7 +15,7 @@ class packet:
     def getHash(self) -> None:
         return self.__packetHash
     
-    def addRoute(self, route) -> None:
+    def addRoute(self, route:str) -> None:
         self.__route = route
 
     def getRoute(self) -> str:
@@ -25,7 +27,7 @@ class packet:
     def getData(self) -> str:
         return self.__data
     
-    def addNum(self, number:str) -> None:
+    def addNum(self, number:str = 1) -> None:
         self.__number = number
 
     def getNum(self) -> str:
@@ -36,7 +38,14 @@ class packet:
 
     def getRSSI(self) -> str:
         return self.__rssi
+    
+    def hashing(self) -> str:
+        processing_text = f"{self.__route}/{self.__number}/{self.__data}"
+        hash_str = hashlib.sha256(processing_text.encode('utf-8')).hexdigest()
+        return hash_str[:6]
 
-class textPacket(packet):
-    def __init__(self):
-        super().__init__()
+    def packet_to_text(self) -> str:
+        #패킷 구조 hash/route/number/data
+        self.__packetHash = self.hashing()
+        text_packet = f"{self.__packetHash}/{self.__route}/{self.__number}/{self.__data}"
+        return text_packet
