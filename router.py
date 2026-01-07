@@ -5,16 +5,25 @@ import table
 import packet
 from tkinter import*
 
+class sequence:
+    def __init__(self):
+        self.seq= -1
+    
+    def getSeq(self):
+        self.seq = (self.seq + 1) % 256
+        return self.seq
+
 class link:
     def __init__(self, tk, port, boardrate, bootWaitingTime:int = 2):
         self.window = tk
         # self.table = table.table()
         # self.table.load_table_file()
-        self.port = self.open_serial(port, boardrate, bootWaitingTime)
+        #self.port = self.open_serial(port, boardrate, bootWaitingTime)
         self.nodeId=0
         self.nodeName=''
         self.ip=[]
         self.runningFlag=True
+        self.sequence = sequence()
         # time.sleep(bootWaitingTime) #아두이노 부팅 시간에 따라 조정필요
 
     def open_serial(self, port:str, boardrate:int, bootWaitingTime:int = 2) -> serial.Serial:
@@ -38,26 +47,23 @@ class link:
         self.nodeName = node.nodeName
         self.ip = node.subnetIp
 
-    def set_packet(self, route:object, type:int, data:str) -> packet.packet:
-        sendPacket = packet.packet()
-        
-        #패킷 정의
-        sendPacket.addData(data)
-        sendPacket.addRoute(route)
-        sendPacket.addNum()#패킷 번호의 경우 멀티전송 말고는 쓸 필요가 없다.
-
-        packet_str = sendPacket.packet_to_text()
+    def set_outbound_packet(self, id:int, route:object, data:str) -> packet.outboundPacket:
+        seq = self.sequence.getSeq()
+        sendPacket = packet.outboundPacket(id, route, seq, data)
+        return sendPacket.getPacket()
 
     def set_route(self):
-        #something
+        #routing Thread로 이전예정
         print()
 
-    def send_telegram(self):
+    def send_telegram(self) -> None:
         text=StringVar()
         text = self.telegram.get('1.0', END) #자동으로 개행문자 삽입됨.
-        self.port.write(text.encode('utf-8'))
+        route = '0.0.0.0-0.0.0.0-0.0.0.0'
+        sendPacket = self.set_outbound_packet(1, route, text)
+        #self.port.write(sendPacket.encode('utf-8'))
+        print(sendPacket)
         self.telegram.delete('1.0', END)
-        #print(list(text))
 
     def set_window(self):
         '''
@@ -84,10 +90,8 @@ class link:
                     time.sleep(0.03)#30ms
                     print(self.port.in_waiting) 
                     raw=self.port.read_until()
-                    
-                    data = raw[:-2].decode()
-                    print(data)
-                    
+                    data = raw[:-2].decode()#println 개행문자 자르기
+                    #print(data)
                     
             except:
                 print('수신에러')
@@ -103,6 +107,5 @@ if __name__ == "__main__":
     li = link(win, 'COM5', 9600)
     li.set_window()
     #li.set_my_node(2)
-    li.run_receiver()
+    #li.run_receiver()
     win.mainloop()
-    
