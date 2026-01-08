@@ -2,6 +2,7 @@ import serial
 import time
 import threading
 import table
+import queue
 import packet
 from tkinter import*
 
@@ -16,15 +17,20 @@ class sequence:
 class link:
     def __init__(self, tk, port, boardrate, bootWaitingTime:int = 2):
         self.window = tk
-        # self.table = table.table()
-        # self.table.load_table_file()
         #self.port = self.open_serial(port, boardrate, bootWaitingTime)
+
+        #가입자
         self.nodeId=0
         self.nodeName=''
         self.ip=[]
-        self.runningFlag=True
+        # self.table = table.table()
+        # self.table.load_table_file()
+        
+        
         self.sequence = sequence()
-        # time.sleep(bootWaitingTime) #아두이노 부팅 시간에 따라 조정필요
+        self.runningFlag=True
+        self.pri_high_q = queue.Queue()
+        self.pri_low_q = queue.Queue()
 
     def open_serial(self, port:str, boardrate:int, bootWaitingTime:int = 2) -> serial.Serial:
         try:
@@ -51,6 +57,11 @@ class link:
         seq = self.sequence.getSeq()
         sendPacket = packet.outboundPacket(id, route, seq, data)
         return sendPacket.getPacket()
+    
+    def set_inbound_packet(self, data:str) -> packet.inboundPacket:
+        #[packetID, route, seq, data, rssi]
+        dataSplit = data.split('$')
+        return packet.inboundPacket(dataSplit[0], dataSplit[1], dataSplit[2], dataSplit[3], dataSplit[4])
 
     def set_route(self):
         #routing Thread로 이전예정
@@ -59,10 +70,9 @@ class link:
     def send_telegram(self) -> None:
         text=StringVar()
         text = self.telegram.get('1.0', END) #자동으로 개행문자 삽입됨.
-        route = '0.0.0.0-0.0.0.0-0.0.0.0'
+        route = '0.0.0.0-0.0.0.0-0.0.0.0'#temp
         sendPacket = self.set_outbound_packet(1, route, text)
         #self.port.write(sendPacket.encode('utf-8'))
-        print(sendPacket)
         self.telegram.delete('1.0', END)
 
     def set_window(self):
@@ -83,7 +93,7 @@ class link:
         self.runningFlag=False
         exit()
 
-    def receive_routine(self):
+    def thread_receive(self):
         while self.runningFlag:
             try:
                 if self.port.in_waiting > 0:
@@ -91,12 +101,30 @@ class link:
                     print(self.port.in_waiting) 
                     raw=self.port.read_until()
                     data = raw[:-2].decode()#println 개행문자 자르기
-                    #print(data)
+                    pri = raw[0]
+                    if pri == 0:
+                        self.pri_high_q.put(data)
+                    else:
+                        self.pri_low_q.put(data)
                     
             except:
                 print('수신에러')
                 
             time.sleep(0.01)#10ms
+
+    def thread_processor(self):
+        target = None
+        data = None
+        inboundPacket = None
+        while self.runningFlag:
+            if not self.pri_high_q.empty():
+                target = self.pri_high_q
+            elif not self.pri_low_q.empty():
+                target = self.pri_low_q
+            else:
+                time.sleep(0.05)#50ms
+
+            data = target.get()#deque
 
     def run_receiver(self):
         receiver = threading.Thread(target=self.receive_routine, daemon=True)
