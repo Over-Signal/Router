@@ -6,31 +6,26 @@ import queue
 import packet
 from tkinter import*
 
-class sequence:
-    def __init__(self):
-        self.seq= -1
-    
-    def getSeq(self):
-        self.seq = (self.seq + 1) % 256
-        return self.seq
-
 class link:
     def __init__(self, tk, port, boardrate, bootWaitingTime:int = 2):
         self.window = tk
         #self.port = self.open_serial(port, boardrate, bootWaitingTime)
 
-        #가입자
+        #가입자/가입자 정보
         self.nodeId=0
         self.nodeName=''
         self.ip=[]
-        # self.table = table.table()
-        # self.table.load_table_file()
+        self.table = table.table()
+        self.nodeList = self.table.load_table_file()
         
-        
-        self.sequence = sequence()
+        #수신패킷 처리
+        self.sequence = packet.sequence()
         self.runningFlag=True
         self.pri_high_q = queue.Queue()
         self.pri_low_q = queue.Queue()
+        
+
+        self.packet_checker = packet.packetCheck()
 
     def open_serial(self, port:str, boardrate:int, bootWaitingTime:int = 2) -> serial.Serial:
         try:
@@ -62,6 +57,28 @@ class link:
         #[packetID, route, seq, data, rssi]
         dataSplit = data.split('$')
         return packet.inboundPacket(dataSplit[0], dataSplit[1], dataSplit[2], dataSplit[3], dataSplit[4])
+    
+    # def hello_packet_process(self, inboundPacket:packet.inboundPacket) -> None:
+
+    def telegram_packet_process(self, inboundPacket:packet.inboundPacket) -> None:
+        route = inboundPacket.getRoute()
+        route = route.split('-')
+        seq = inboundPacket.getSeq()
+        if len(route) == 1:#flooding시 송신노드 확인
+            for i in range(len(self.nodeList)):#가입자 table
+                if self.nodeList[i].subnetIp == str(route):#route상 ip가 발신가입자 뿐일경우
+                    id = self.nodeList[i].nodeId
+                    if self.packet_checker.packet_duplicate_check(id, seq) == True: #패킷 미중복
+                        '''
+                        전문 전시창 업데이트/전문csv 업데이트/재송신패킷 구성 및 송신
+                        '''
+
+
+                    
+        
+        
+        else:
+
 
     def set_route(self):
         #routing Thread로 이전예정
@@ -123,8 +140,20 @@ class link:
                 target = self.pri_low_q
             else:
                 time.sleep(0.05)#50ms
+                continue
 
             data = target.get()#deque
+            inboundPacket = self.set_inbound_packet(data) #패킷 객체 return받음
+            match inboundPacket.getID():
+                case 0:
+                    self.hello_packet_process(inboundPacket)
+                case 1:
+                    self.telegram_packet_process(inboundPacket)
+                case 2:
+                    self.image_packet_process(inboundPacket)
+
+            time.sleep(0.05)#50ms
+
 
     def run_receiver(self):
         receiver = threading.Thread(target=self.receive_routine, daemon=True)

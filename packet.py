@@ -1,4 +1,33 @@
-import hashlib
+import collections
+
+class packetCheck:
+    def __init__(self):
+        self.set = set()
+        self.history_queue = collections.deque(maxlen=100)
+
+    def packet_duplicate_check(self, nodeId:int, seq:int):
+        '''
+        nodeId와 seq를 받아 중복이면 False, 미중복이면 True를 return
+        '''
+        if (nodeId, seq) in self.set:
+            return False #내부존제
+        
+        self.set.add((nodeId, seq))
+        self.history_queue.append((nodeId, seq))
+
+        if(len(self.history_queue) > self.history_queue.maxlen):
+            old_data = self.history_queue.popleft()
+            self.set.discard(old_data)
+
+        return True
+
+class sequence:
+    def __init__(self):
+        self.seq= -1
+    
+    def getSeq(self):
+        self.seq = (self.seq + 1) % 256
+        return self.seq
 
 class packet:
     def __init__(self, id:int, route:str, seq:int, data:str):
@@ -8,7 +37,7 @@ class packet:
         self._data = data
     
     def getPacket(self) -> str:
-        text_packet = f"{self.__packetID}${self.__route}${self.__seq}${self.__data}"
+        text_packet = f"{self._packetID}${self._route}${self._seq}${self._data}"
         return text_packet
 
 
@@ -24,6 +53,9 @@ class outboundPacket(packet):
 
     def getRoute(self) -> str:
         return self._route
+    
+    def getSeq(self) -> int:
+        return self._seq
 
     def getData(self) -> str:
         return self._data
@@ -35,8 +67,8 @@ class outboundPacket(packet):
 
 
 class inboundPacket(outboundPacket):
-    def __init__(self, id:int, route:str, number:int, data:str, rssi:int):
-        super().__init__(id, route, number, data)
+    def __init__(self, id:int, route:str, seq:int, data:str, rssi:int):
+        super().__init__(id, route, seq, data)
         self._rssi = rssi
 
     def getRSSI(self) -> int:
