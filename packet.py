@@ -10,7 +10,7 @@ class packetCheck:
         nodeId와 seq를 받아 중복이면 False, 미중복이면 True를 return
         '''
         if (nodeId, seq) in self.set:
-            return False #내부존제
+            return False #내부존재
         
         self.set.add((nodeId, seq))
         self.history_queue.append((nodeId, seq))

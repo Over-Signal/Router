@@ -4,12 +4,13 @@ import threading
 import table
 import queue
 import packet
+import telegram
 from tkinter import*
 
 class link:
     def __init__(self, tk, port, boardrate, bootWaitingTime:int = 2):
         self.window = tk
-        self.port = self.open_serial(port, boardrate, bootWaitingTime)
+        #self.port = self.open_serial(port, boardrate, bootWaitingTime)
 
         #가입자/가입자 정보
         self.nodeId=0
@@ -27,6 +28,9 @@ class link:
         #송신패킷 처리
         self.sequence = packet.sequence()
         self.transmit_q = queue.Queue()
+
+        #전문처리
+        self.telegram_processor = telegram.telegramData(self.table.nodeTable)
 
     def open_serial(self, port:str, boardrate:int, bootWaitingTime:int = 2) -> serial.Serial:
         try:
@@ -67,19 +71,21 @@ class link:
         seq = inboundPacket.getSeq()
         if len(route) == 1:#flooding시 송신노드 확인
             for i in range(len(self.table.nodeTable)):#가입자 table
-                if self.table.nodeTable[i].subnetIp == str(route):#route상 ip가 발신가입자 뿐일경우
+                if self.table.nodeTable[i].subnetIp == route:#route상 ip가 발신가입자 뿐일경우
                     id = self.table.nodeTable[i].nodeId
                     if self.packet_checker.packet_duplicate_check(id, seq) == True: #패킷 미중복
                         '''
                         전문 전시창 업데이트/전문csv 업데이트/재송신패킷 구성 및 송신
                         '''
-
-                         
-
+                        self.telegram_processor.telegram_data_save(id, inboundPacket)
+                        self.transmit_q.put(inboundPacket.getPacket().encode('utf-8'))
+                else:
+                    print('가입자 확인되지 않음')
         else:
             '''
             라우팅 작업 및 송신
             '''
+
 
     def set_route(self):
         #routing Thread로 이전예정
@@ -175,6 +181,7 @@ if __name__ == "__main__":
     win = Tk()
     li = link(win, 'COM5', 9600)
     li.set_window()
-    #li.set_my_node(2)
-    #li.run_receiver()
+    # li.set_my_node(2)
+    # li.run_receiver()
+    li.telegram_packet_process(packet.inboundPacket(1,'178.8.12.3', 2, 'test', '-19'))
     win.mainloop()

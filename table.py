@@ -18,7 +18,7 @@ class table:
                 for row in reader:
                     # 필요한 데이터 타입으로 변환하여 저장
                     # ip일단 str list로 작성함. 차후 소요에 따라서 변경가능
-                    node_table.append(node(int(row['nodeId']), row['nodeName'], row['nodeIp'].split('.')))
+                    node_table.append(node(int(row['nodeId']), row['nodeName'], row['nodeIp'].split('-')))
             self.nodeTable = node_table
 
         except:
