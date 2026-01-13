@@ -9,23 +9,24 @@ from tkinter import*
 class link:
     def __init__(self, tk, port, boardrate, bootWaitingTime:int = 2):
         self.window = tk
-        #self.port = self.open_serial(port, boardrate, bootWaitingTime)
+        self.port = self.open_serial(port, boardrate, bootWaitingTime)
 
         #가입자/가입자 정보
         self.nodeId=0
         self.nodeName=''
         self.ip=[]
         self.table = table.table()
-        self.nodeList = self.table.load_table_file()
+        self.table.load_table_file()
         
         #수신패킷 처리
-        self.sequence = packet.sequence()
         self.runningFlag=True
         self.pri_high_q = queue.Queue()
         self.pri_low_q = queue.Queue()
-        
-
         self.packet_checker = packet.packetCheck()
+
+        #송신패킷 처리
+        self.sequence = packet.sequence()
+        self.transmit_q = queue.Queue()
 
     def open_serial(self, port:str, boardrate:int, bootWaitingTime:int = 2) -> serial.Serial:
         try:
@@ -65,20 +66,20 @@ class link:
         route = route.split('-')
         seq = inboundPacket.getSeq()
         if len(route) == 1:#flooding시 송신노드 확인
-            for i in range(len(self.nodeList)):#가입자 table
-                if self.nodeList[i].subnetIp == str(route):#route상 ip가 발신가입자 뿐일경우
-                    id = self.nodeList[i].nodeId
+            for i in range(len(self.table.nodeTable)):#가입자 table
+                if self.table.nodeTable[i].subnetIp == str(route):#route상 ip가 발신가입자 뿐일경우
+                    id = self.table.nodeTable[i].nodeId
                     if self.packet_checker.packet_duplicate_check(id, seq) == True: #패킷 미중복
                         '''
                         전문 전시창 업데이트/전문csv 업데이트/재송신패킷 구성 및 송신
                         '''
 
+                         
 
-                    
-        
-        
         else:
-
+            '''
+            라우팅 작업 및 송신
+            '''
 
     def set_route(self):
         #routing Thread로 이전예정
@@ -153,6 +154,17 @@ class link:
                     self.image_packet_process(inboundPacket)
 
             time.sleep(0.05)#50ms
+
+    def thread_transmit(self):
+        while self.runningFlag:
+            if not self.transmit_q.empty():
+                if self.port.in_waiting() == 0:
+                    to_transmit_data = self.transmit_q.get()
+                    self.port.write(to_transmit_data.encode('utf-8'))
+                else:
+                    time.sleep(0.01)#10ms
+            else:
+                continue
 
 
     def run_receiver(self):
