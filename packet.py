@@ -48,17 +48,17 @@ class outboundPacket(packet):
         '''
         super().__init__(id, route, seq, data)
     
-    def getID(self) -> None:
-        return self._packetID
+    def getID(self) -> int:
+        return int(self._packetID)
 
     def getRoute(self) -> str:
-        return self._route
+        return str(self._route)
     
     def getSeq(self) -> int:
-        return self._seq
+        return int(self._seq)
 
     def getData(self) -> str:
-        return self._data
+        return str(self._data)
 
     def getPacket(self) -> str:
         #패킷 구조 id/route/seq/data
@@ -77,4 +77,8 @@ class inboundPacket(outboundPacket):
     def getPacket(self) -> str:
         #패킷 구조 id/route/seq/data
         text_packet = f"{self._packetID}${self._route}${self._seq}${self._data}${self._rssi}"
+        return text_packet
+
+    def get_transform_packet(self) -> str:
+        text_packet = f"{self._packetID}${self._route}${self._seq}${self._data}"
         return text_packet

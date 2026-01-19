@@ -9,6 +9,7 @@ class node:
 class table:
     def __init__(self):
         self.nodeTable=[]
+        self.nodeIpTable=[]
 
     def load_table_file(self) -> None:
         node_table=[]
@@ -19,6 +20,7 @@ class table:
                     # 필요한 데이터 타입으로 변환하여 저장
                     # ip일단 str list로 작성함. 차후 소요에 따라서 변경가능
                     node_table.append(node(int(row['nodeId']), row['nodeName'], row['nodeIp']))
+                    self.nodeIpTable.append(row['nodeIp'])
             self.nodeTable = node_table
 
         except:

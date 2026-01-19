@@ -65,7 +65,7 @@ class link:
         #[packetID, route, seq, data, rssi]
         #
         dataSplit = data.split('$')
-        inbound_data, rssi = dataSplit[3].split('/')
+        inbound_data, rssi = dataSplit[3].split('/')#data/rssi split
         print(dataSplit)
         return packet.inboundPacket(dataSplit[0], dataSplit[1], dataSplit[2], inbound_data, rssi)
     
@@ -73,17 +73,17 @@ class link:
 
     def telegram_packet_process(self, inboundPacket:packet.inboundPacket) -> None:
         route = inboundPacket.getRoute()
-        route = route.split('-')
+        route_comp = route.split('-') #routing 경로 판별을 위한 - split
         seq = inboundPacket.getSeq()
-        if len(route) == 1:#flooding시 송신노드 확인 / 송신노드가 발신노드
+        if len(route_comp) == 1:#flooding시 송신노드 확인 / 송신노드가 발신노드
             '''
             for문을 돌려서 확인하는게 아니라, packet처럼 set으로 확인하던지, if not in 으로 하던지 해야 깔끔함
             '''
-            if route in self.table.nodeTable: #성능저하 발생시 set으로 전환
+            if route in self.table.nodeIpTable: #성능저하 발생시 set으로 전환
                 id = self.table.check_id(route)
                 if self.packet_checker.packet_duplicate_check(id, seq) == True: # 패킷 미중복
                     self.telegram_processor.telegram_data_save(id, inboundPacket)
-                    self.transmit_q.put(inboundPacket.getPacket().encode('utf-8'))
+                    self.transmit_q.put(inboundPacket.get_transform_packet())
                 else:
                     pass
             else:
@@ -208,5 +208,5 @@ if __name__ == "__main__":
     li.set_window()
     li.set_my_node(2)
     li.run_thread()
-    li.telegram_packet_process(packet.inboundPacket(1,'178.8.12.3', 2, 'test', '-19'))
+    #li.telegram_packet_process(packet.inboundPacket(1,'178.8.12.3', 2, 'test', '-19'))
     win.mainloop()
