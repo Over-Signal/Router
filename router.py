@@ -51,7 +51,7 @@ class link:
         가입자 정보 설정
         '''
         #0:nodeId, 1:nodeName, 2:subnetIp
-        node = self.table.table[nodeID]
+        node = self.table.nodeTable[nodeID]
         self.nodeId = node.nodeId
         self.nodeName = node.nodeName
         self.ip = node.subnetIp
@@ -113,6 +113,7 @@ class link:
         route = '0.0.0.0-0.0.0.0-0.0.0.0'#temp
         sendPacket = self.set_outbound_packet(1, route, text)
         #self.port.write(sendPacket.encode('utf-8'))
+        self.transmit_q.put(sendPacket)
         self.telegram.delete('1.0', END)
 
     def set_window(self):
@@ -181,7 +182,7 @@ class link:
     def thread_transmit(self):
         while self.runningFlag:
             if not self.transmit_q.empty():
-                if self.port.in_waiting() == 0:
+                if self.port.in_waiting == 0:
                     with self.mutex:
                         to_transmit_data = self.transmit_q.get()
                         self.port.write(to_transmit_data.encode('utf-8'))
@@ -202,7 +203,7 @@ if __name__ == "__main__":
     win = Tk()
     li = link(win, 'COM5', 9600)
     li.set_window()
-    # li.set_my_node(2)
-    # li.run_receiver()
+    li.set_my_node(2)
+    li.run_thread()
     li.telegram_packet_process(packet.inboundPacket(1,'178.8.12.3', 2, 'test', '-19'))
     win.mainloop()
