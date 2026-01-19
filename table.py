@@ -24,7 +24,16 @@ class table:
         except:
             print('File Not found')
 
+    def check_id(self, ip:str) -> int:
+        try:
+            for i in range(len(self.nodeTable)):
+                if self.nodeTable[i].subnetIp[0] == ip:
+                    return i
+            raise IndexError
+        except:
+            print('table에 가입자가 존재하지 않음')
+
 if __name__ == "__main__":
     t=table()
     l=t.load_table_file()
-    print(l)
+    t.check_id('178.8.12.18')

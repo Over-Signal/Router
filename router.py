@@ -10,7 +10,7 @@ from tkinter import*
 class link:
     def __init__(self, tk, port, boardrate, bootWaitingTime:int = 2):
         self.window = tk
-        #self.port = self.open_serial(port, boardrate, bootWaitingTime)
+        self.port = self.open_serial(port, boardrate, bootWaitingTime)
 
         #가입자/가입자 정보
         self.nodeId=0
@@ -31,6 +31,9 @@ class link:
 
         #전문처리
         self.telegram_processor = telegram.telegramData(self.table.nodeTable)
+
+        #threading/mutex
+        self.mutex = threading.Lock()
 
     def open_serial(self, port:str, boardrate:int, bootWaitingTime:int = 2) -> serial.Serial:
         try:
@@ -69,22 +72,35 @@ class link:
         route = inboundPacket.getRoute()
         route = route.split('-')
         seq = inboundPacket.getSeq()
-        if len(route) == 1:#flooding시 송신노드 확인
-            for i in range(len(self.table.nodeTable)):#가입자 table
-                if self.table.nodeTable[i].subnetIp == route:#route상 ip가 발신가입자 뿐일경우
-                    id = self.table.nodeTable[i].nodeId
-                    if self.packet_checker.packet_duplicate_check(id, seq) == True: #패킷 미중복
-                        '''
-                        전문 전시창 업데이트/전문csv 업데이트/재송신패킷 구성 및 송신
-                        '''
-                        self.telegram_processor.telegram_data_save(id, inboundPacket)
-                        self.transmit_q.put(inboundPacket.getPacket().encode('utf-8'))
+        if len(route) == 1:#flooding시 송신노드 확인 / 송신노드가 발신노드
+            '''
+            for문을 돌려서 확인하는게 아니라, packet처럼 set으로 확인하던지, if not in 으로 하던지 해야 깔끔함
+            '''
+            if route in self.table.nodeTable: #성능저하 발생시 set으로 전환
+                id = self.table.check_id(route)
+                if self.packet_checker.packet_duplicate_check(id, seq) == True: # 패킷 미중복
+                    self.telegram_processor.telegram_data_save(id, inboundPacket)
+                    self.transmit_q.put(inboundPacket.getPacket().encode('utf-8'))
                 else:
-                    print('가입자 확인되지 않음')
+                    pass
+            else:
+                pass
+            # for i in range(len(self.table.nodeTable)):#가입자 table
+            #     if self.table.nodeTable[i].subnetIp == route:#route상 ip가 발신가입자 뿐일경우
+            #         id = self.table.nodeTable[i].nodeId
+            #         if self.packet_checker.packet_duplicate_check(id, seq) == True: #패킷 미중복
+            #             '''
+            #             전문 전시창 업데이트/전문csv 업데이트/재송신패킷 구성 및 송신
+            #             '''
+            #             self.telegram_processor.telegram_data_save(id, inboundPacket)
+            #             self.transmit_q.put(inboundPacket.getPacket().encode('utf-8'))
+            #     else:
+            #         print('가입자 확인되지 않음')
         else:
             '''
             라우팅 작업 및 송신
             '''
+            pass
 
 
     def set_route(self):
@@ -122,15 +138,16 @@ class link:
             try:
                 if self.port.in_waiting > 0:
                     time.sleep(0.03)#30ms
-                    print(self.port.in_waiting) 
-                    raw=self.port.read_until()
-                    data = raw[:-2].decode()#println 개행문자 자르기
-                    pri = raw[0]
-                    if pri == 0:
-                        self.pri_high_q.put(data)
-                    else:
-                        self.pri_low_q.put(data)
-                    
+                    with self.mutex:
+                        print(self.port.in_waiting) 
+                        raw=self.port.read_until()
+                    if raw:
+                        data = raw[:-2].decode()#println 개행문자 자르기
+                        pri = raw[0]
+                        if pri == 0:
+                            self.pri_high_q.put(data)
+                        else:
+                            self.pri_low_q.put(data)
             except:
                 print('수신에러')
                 
@@ -165,17 +182,21 @@ class link:
         while self.runningFlag:
             if not self.transmit_q.empty():
                 if self.port.in_waiting() == 0:
-                    to_transmit_data = self.transmit_q.get()
-                    self.port.write(to_transmit_data.encode('utf-8'))
+                    with self.mutex:
+                        to_transmit_data = self.transmit_q.get()
+                        self.port.write(to_transmit_data.encode('utf-8'))
                 else:
                     time.sleep(0.01)#10ms
             else:
                 continue
 
-
-    def run_receiver(self):
-        receiver = threading.Thread(target=self.receive_routine, daemon=True)
+    def run_thread(self):
+        receiver = threading.Thread(target=self.thread_receive, daemon=True)
+        transmitter = threading.Thread(target=self.thread_transmit, daemon=True)
+        processor = threading.Thread(target=self.thread_processor, daemon=True)
         receiver.start()
+        transmitter.start()
+        processor.start()
 
 if __name__ == "__main__":
     win = Tk()
