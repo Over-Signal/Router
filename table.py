@@ -1,7 +1,7 @@
 import csv
 
 class node:
-    def __init__(self, nodeId:int, nodeName:str, IP:list) -> None:
+    def __init__(self, nodeId:int, nodeName:str, IP:str) -> None:
         self.nodeId = nodeId
         self.nodeName = nodeName
         self.subnetIp = IP
@@ -18,7 +18,7 @@ class table:
                 for row in reader:
                     # 필요한 데이터 타입으로 변환하여 저장
                     # ip일단 str list로 작성함. 차후 소요에 따라서 변경가능
-                    node_table.append(node(int(row['nodeId']), row['nodeName'], row['nodeIp'].split('-')))
+                    node_table.append(node(int(row['nodeId']), row['nodeName'], row['nodeIp']))
             self.nodeTable = node_table
 
         except:
@@ -27,7 +27,7 @@ class table:
     def check_id(self, ip:str) -> int:
         try:
             for i in range(len(self.nodeTable)):
-                if self.nodeTable[i].subnetIp[0] == ip:
+                if self.nodeTable[i].subnetIp == ip:
                     return i
             raise IndexError
         except:

@@ -63,8 +63,11 @@ class link:
     
     def set_inbound_packet(self, data:str) -> packet.inboundPacket:
         #[packetID, route, seq, data, rssi]
+        #
         dataSplit = data.split('$')
-        return packet.inboundPacket(dataSplit[0], dataSplit[1], dataSplit[2], dataSplit[3], dataSplit[4])
+        inbound_data, rssi = dataSplit[3].split('/')
+        print(dataSplit)
+        return packet.inboundPacket(dataSplit[0], dataSplit[1], dataSplit[2], inbound_data, rssi)
     
     # def hello_packet_process(self, inboundPacket:packet.inboundPacket) -> None:
 
@@ -110,7 +113,7 @@ class link:
     def send_telegram(self) -> None:
         text=StringVar()
         text = self.telegram.get('1.0', END) #자동으로 개행문자 삽입됨.
-        route = '0.0.0.0-0.0.0.0-0.0.0.0'#temp
+        route = self.ip #temp
         sendPacket = self.set_outbound_packet(1, route, text)
         #self.port.write(sendPacket.encode('utf-8'))
         self.transmit_q.put(sendPacket)
@@ -189,7 +192,7 @@ class link:
                 else:
                     time.sleep(0.01)#10ms
             else:
-                continue
+                time.sleep(0.01)
 
     def run_thread(self):
         receiver = threading.Thread(target=self.thread_receive, daemon=True)
