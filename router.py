@@ -141,9 +141,8 @@ class link:
         while self.runningFlag:
             try:
                 if self.port.in_waiting > 0:
-                    time.sleep(0.03)#30ms
-                    with self.mutex:
-                        print(self.port.in_waiting) 
+                    time.sleep(0.02)#20ms
+                    with self.mutex: 
                         raw=self.port.read_until()
                     if raw:
                         data = raw[:-2].decode()#println 개행문자 자르기
@@ -167,7 +166,7 @@ class link:
             elif not self.pri_low_q.empty():
                 target = self.pri_low_q
             else:
-                time.sleep(0.05)#50ms
+                time.sleep(0.01)#10ms
                 continue
 
             data = target.get()#deque
@@ -179,8 +178,7 @@ class link:
                     self.telegram_packet_process(inboundPacket)
                 case 2:
                     self.image_packet_process(inboundPacket)
-
-            time.sleep(0.05)#50ms
+            time.sleep(0.01)#10ms
 
     def thread_transmit(self):
         while self.runningFlag:

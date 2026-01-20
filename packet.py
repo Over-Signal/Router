@@ -80,5 +80,5 @@ class inboundPacket(outboundPacket):
         return text_packet
 
     def get_transform_packet(self) -> str:
-        text_packet = f"{self._packetID}${self._route}${self._seq}${self._data}"
+        text_packet = f"{self._packetID}${self._route}${self._seq}${self._data}\n"
         return text_packet
