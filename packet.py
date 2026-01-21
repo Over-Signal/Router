@@ -5,7 +5,7 @@ class packetCheck:
         self.set = set()
         self.history_queue = collections.deque(maxlen=100)
 
-    def packet_duplicate_check(self, nodeId:int, seq:int):
+    def packet_duplicate_check(self, nodeId:int, seq:int) -> bool:
         '''
         nodeId와 seq를 받아 중복이면 False, 미중복이면 True를 return
         '''

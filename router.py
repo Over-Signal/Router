@@ -10,7 +10,7 @@ from tkinter import*
 class link:
     def __init__(self, tk, port, boardrate, bootWaitingTime:int = 2):
         self.window = tk
-        self.port = self.open_serial(port, boardrate, bootWaitingTime)
+        #self.port = self.open_serial(port, boardrate, bootWaitingTime)
 
         #가입자/가입자 정보
         self.nodeId=0
@@ -63,7 +63,6 @@ class link:
     
     def set_inbound_packet(self, data:str) -> packet.inboundPacket:
         #[packetID, route, seq, data, rssi]
-        #
         dataSplit = data.split('$')
         inbound_data, rssi = dataSplit[3].split('/')#data/rssi split
         print(dataSplit)
@@ -80,7 +79,7 @@ class link:
             for문을 돌려서 확인하는게 아니라, packet처럼 set으로 확인하던지, if not in 으로 하던지 해야 깔끔함
             '''
             if route in self.table.nodeIpTable: #성능저하 발생시 set으로 전환
-                id = self.table.check_id(route)
+                id = self.table.check_id(route)#가입자 node id
                 if self.packet_checker.packet_duplicate_check(id, seq) == True: # 패킷 미중복
                     self.telegram_processor.telegram_data_save(id, inboundPacket)
                     self.transmit_q.put(inboundPacket.get_transform_packet())
@@ -116,6 +115,14 @@ class link:
         route = self.ip #temp
         sendPacket = self.set_outbound_packet(1, route, text)
         #self.port.write(sendPacket.encode('utf-8'))
+        try:
+            res = self.packet_checker.packet_duplicate_check(self.nodeId, sendPacket.getSeq())
+            if res:
+                pass
+            else:
+                raise ValueError
+        except:
+            print('전송패킷 중복')
         self.transmit_q.put(sendPacket)
         self.telegram.delete('1.0', END)
 
