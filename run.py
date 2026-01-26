@@ -1,5 +1,14 @@
-import tkinter
 import router
+import shell
+import interface
+
+try:
+    import tkinter as tk
+    HEADLESS = False
+    
+except ImportError:
+    import shell
+    HEADLESS = True
 
 PORT = 'COM5'
 HEADLESS = True
@@ -12,11 +21,8 @@ def show_node_list(table):
         print(f"{node.nodeId} | {node.nodeName}")
     print('==========================================')
 
-
 def run():
-    
     if HEADLESS:
-        import shell
         run_router = router.link()
         sh = shell.hlShell(run_router)
         node_table = run_router.table.nodeTable
@@ -25,17 +31,18 @@ def run():
         run_router.set_my_node(selectedNode)
         run_router.open_serial(PORT, 9600)
         run_router.run_thread()
+        sh.run_input()
 
-    else: 
-        window = tkinter.Tk()
-        run_router = router.link(window, PORT, 9600)
-        node_table = run_router.table.nodeTable
+    else:#gui
+        rt = router.link()
+        ui = interface.linkGui(tk, rt)
+        node_table = rt.table.nodeTable
         show_node_list(node_table)
         selectedNode = int(input('사용자 번호 입력>>>'))
-        run_router.set_my_node(selectedNode)
-        run_router.open_serial(PORT, 9600)
-        run_router.run_thread()
-        window.mainloop()
+        rt.set_my_node(selectedNode)
+        rt.open_serial(PORT, 9600)
+        rt.run_thread()
+        ui.set_window()
 
 if __name__ == "__main__":
     run()

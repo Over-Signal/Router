@@ -31,6 +31,7 @@ class telegramData:
             print('File not found')
     
     def telegram_data_save(self, nodeId:int, inboundPacket:packet.inboundPacket) -> bool:
+        try:
             data = inboundPacket.getData()
             seq = inboundPacket.getSeq()
             time = datetime.datetime.now()
@@ -45,8 +46,10 @@ class telegramData:
             with open(self.file_name, 'a', newline='', encoding='utf-8') as file:
                 writer = csv.DictWriter(file, fieldnames=['date','nodeName','seq','data'])
                 writer.writerow(rowData)
-        # except:
-        #     print('File not found')
+            return True
+        except:
+            print('File not found')
+            return False
                 
 
 if __name__ == "__main__":

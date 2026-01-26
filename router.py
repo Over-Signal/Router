@@ -5,12 +5,11 @@ import table
 import queue
 import packet
 import telegram
-from tkinter import*
+
 
 class link:
-    def __init__(self, tk, port, boardrate, bootWaitingTime:int = 2):
-        self.window = tk
-        #self.port = self.open_serial(port, boardrate, bootWaitingTime)
+    def __init__(self):
+        self.port = None
 
         #가입자/가입자 정보
         self.nodeId=0
@@ -35,7 +34,7 @@ class link:
         #threading/mutex
         self.mutex = threading.Lock()
 
-    def open_serial(self, port:str, boardrate:int, bootWaitingTime:int = 2) -> serial.Serial:
+    def open_serial(self, port:str, boardrate:int, bootWaitingTime:int = 2) -> None:
         try:
             openPort = serial.Serial(port, boardrate)
         
@@ -44,7 +43,7 @@ class link:
             exit()
         
         time.sleep(bootWaitingTime)
-        return openPort
+        self.port = openPort
 
     def set_my_node(self, nodeID:int) -> None:
         '''
@@ -59,7 +58,7 @@ class link:
     def set_outbound_packet(self, id:int, route:object, data:str) -> packet.outboundPacket:
         seq = self.sequence.getSeq()
         sendPacket = packet.outboundPacket(id, route, seq, data)
-        return sendPacket.getPacket()
+        return sendPacket
     
     def set_inbound_packet(self, data:str) -> packet.inboundPacket:
         #[packetID, route, seq, data, rssi]
@@ -104,40 +103,9 @@ class link:
             '''
             pass
 
-
     def set_route(self):
         #routing Thread로 이전예정
         print()
-
-    def send_telegram(self) -> None:
-        text=StringVar()
-        text = self.telegram.get('1.0', END) #자동으로 개행문자 삽입됨.
-        route = self.ip #temp
-        sendPacket = self.set_outbound_packet(1, route, text)
-        #self.port.write(sendPacket.encode('utf-8'))
-        try:
-            res = self.packet_checker.packet_duplicate_check(self.nodeId, sendPacket.getSeq())
-            if res:
-                pass
-            else:
-                raise ValueError
-        except:
-            print('전송패킷 중복')
-        self.transmit_q.put(sendPacket)
-        self.telegram.delete('1.0', END)
-
-    def set_window(self):
-        '''
-        test gui
-        '''
-        self.window.geometry('500x600')
-        self.window.title('송신창 테스트')
-        Label(self.window, text='전문 입력').grid(row=0, column=0)
-        self.telegram=Text(self.window, width=30, height=15)
-        self.telegram.grid(row=1, column=0, padx=145)
-        Button(self.window, text='전송', width=10, command=self.send_telegram).grid(row=2, column=0)
-        Button(self.window, text='종료', width=10, command=self.close).grid(row=3, column=0)
-        
     
     def close(self):
         self.port.close()
@@ -208,10 +176,7 @@ class link:
         processor.start()
 
 if __name__ == "__main__":
-    win = Tk()
-    li = link(win, 'COM5', 9600)
-    li.set_window()
+    li = link()
     li.set_my_node(2)
     li.run_thread()
     #li.telegram_packet_process(packet.inboundPacket(1,'178.8.12.3', 2, 'test', '-19'))
-    win.mainloop()
