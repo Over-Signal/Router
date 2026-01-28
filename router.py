@@ -31,6 +31,9 @@ class link:
         #전문처리
         self.telegram_processor = telegram.telegramData(self.table.nodeTable)
 
+        #Transceiver 제어
+        self.control_q = queue.Queue()
+
         #threading/mutex
         self.mutex = threading.Lock()
 
@@ -54,6 +57,7 @@ class link:
         self.nodeId = node.nodeId
         self.nodeName = node.nodeName
         self.ip = node.subnetIp
+        self.control_q.put(f'C$ID${self.nodeId}')
 
     def set_outbound_packet(self, id:int, route:object, data:str) -> packet.outboundPacket:
         seq = self.sequence.getSeq()
@@ -116,9 +120,8 @@ class link:
         while self.runningFlag:
             try:
                 if self.port.in_waiting > 0:
-                    time.sleep(0.02)#20ms
-                    with self.mutex: 
-                        raw=self.port.read_until()
+                    time.sleep(0.02)#20ms    
+                    raw=self.port.read_until()
                     if raw:
                         data = raw[:-2].decode()#println 개행문자 자르기
                         pri = raw[0]
@@ -156,16 +159,23 @@ class link:
             time.sleep(0.01)#10ms
 
     def thread_transmit(self):
+        target = None
         while self.runningFlag:
-            if not self.transmit_q.empty():
-                if self.port.in_waiting == 0:
-                    with self.mutex:
-                        to_transmit_data = self.transmit_q.get()
-                        self.port.write(to_transmit_data.encode('utf-8'))
-                else:
-                    time.sleep(0.01)#10ms
+            if not self.control_q.empty():
+                target = self.control_q
+            elif not self.transmit_q.empty():
+                target = self.transmit_q
             else:
                 time.sleep(0.01)
+                continue
+
+            to_transmit_data = target.get()
+            
+            if self.port.in_waiting == 0:
+                self.port.write(to_transmit_data.encode('utf-8'))
+            else:
+                time.sleep(0.01)#10ms
+            
 
     def run_thread(self):
         receiver = threading.Thread(target=self.thread_receive, daemon=True)
