@@ -11,8 +11,8 @@ class linkGui:
         text=self.tk.StringVar()
         text = self.telegram.get('1.0', self.tk.END) #자동으로 개행문자 삽입됨.
         route = self.router.ip #temp
-        sendPacket = self.router.set_outbound_packet(1, route, text)
-        print(sendPacket.getPacket())
+        sendPacket = self.router.set_outbound_packet(1, route, text[:-1])
+        #print(sendPacket.getPacket())
         #self.port.write(sendPacket.encode('utf-8'))
         
         try:
