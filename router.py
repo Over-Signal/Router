@@ -11,6 +11,8 @@ class link:
     def __init__(self):
         self.port = None
 
+        self.cli = False
+
         #가입자/가입자 정보
         self.nodeId=0
         self.nodeName=''
@@ -68,7 +70,6 @@ class link:
         #[packetID, route, seq, data, rssi]
         dataSplit = data.split('$')
         inbound_data, rssi = dataSplit[3].split('/')#data/rssi split
-        print(dataSplit)
         return packet.inboundPacket(dataSplit[0], dataSplit[1], dataSplit[2], inbound_data, rssi)
     
     # def hello_packet_process(self, inboundPacket:packet.inboundPacket) -> None:
@@ -84,6 +85,12 @@ class link:
             if route in self.table.nodeIpTable: #성능저하 발생시 set으로 전환
                 id = self.table.check_id(route)#가입자 node id
                 if self.packet_checker.packet_duplicate_check(id, seq) == True: # 패킷 미중복
+                    if self.cli:
+                        print('==========================================')
+                        print('                 전문수신                 ')
+                        print('==========================================')
+                        print(f'발신노드 : {self.table.nodeTable[id].nodeName}')
+                        print(f'발신노드 : {inboundPacket.getData()}')
                     self.telegram_processor.telegram_data_save(id, inboundPacket)
                     self.transmit_q.put(inboundPacket.get_transform_packet())
                 else:

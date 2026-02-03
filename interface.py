@@ -16,11 +16,12 @@ class linkGui:
         #self.port.write(sendPacket.encode('utf-8'))
         
         try:
-            res = self.router.telegram_processor.telegram_data_save(self.router.nodeId, sendPacket)
+            res = self.router.packet_checker.packet_duplicate_check(self.router.nodeId, sendPacket.getSeq())
+            #res = self.router.telegram_processor.telegram_data_save(self.router.nodeId, sendPacket)
             if res:
-                pass
+                self.router.telegram_processor.telegram_data_save(self.router.nodeId, sendPacket)
             else:
-                raise ValueError
+                pass
         except:
             print('전송패킷 중복')
         self.router.transmit_q.put(sendPacket.getPacket())

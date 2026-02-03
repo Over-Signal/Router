@@ -25,6 +25,7 @@ def run():
     if HEADLESS:
         run_router = router.link()
         sh = shell.hlShell(run_router)
+        run_router.cli = HEADLESS
         node_table = run_router.table.nodeTable
         show_node_list(node_table)
         selectedNode = int(input('사용자 번호 입력>>>'))
