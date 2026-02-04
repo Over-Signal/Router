@@ -18,7 +18,7 @@ class hlShell:
                 cmd = command_parts[0].lower()
                 
                 if cmd == 'exit':
-                    self.close()
+                    self.router.close()
                     break
                     
                 elif cmd == 'send':
