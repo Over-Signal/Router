@@ -8,10 +8,10 @@ import telegram
 
 
 class link:
-    def __init__(self):
+    def __init__(self, headless:bool = False):
         self.port = None
 
-        self.cli = False
+        self.cli = headless
 
         #가입자/가입자 정보
         self.nodeId=0
@@ -25,6 +25,7 @@ class link:
         self.pri_high_q = queue.Queue()
         self.pri_low_q = queue.Queue()
         self.packet_checker = packet.packetCheck()
+        self.display_q = queue.Queue()
 
         #송신패킷 처리
         self.sequence = packet.sequence()
@@ -85,12 +86,7 @@ class link:
             if route in self.table.nodeIpTable: #성능저하 발생시 set으로 전환
                 id = self.table.check_id(route)#가입자 node id
                 if self.packet_checker.packet_duplicate_check(id, seq) == True: # 패킷 미중복
-                    if self.cli:
-                        print('==========================================')
-                        print('                 전문수신                 ')
-                        print('==========================================')
-                        print(f'발신노드 : {self.table.nodeTable[id].nodeName}')
-                        print(f'발신노드 : {inboundPacket.getData()}')
+                    self.display_q.put([self.table.nodeTable[id].nodeName, inboundPacket.getData()])
                     self.telegram_processor.telegram_data_save(id, inboundPacket)
                     self.transmit_q.put(inboundPacket.get_transform_packet())
                 else:
@@ -113,6 +109,12 @@ class link:
             라우팅 작업 및 송신
             '''
             pass
+        
+    def get_telegram(self):
+        try:
+            return self.display_q.get_nowait()
+        except queue.Empty:
+            return None
 
     def set_route(self):
         #routing Thread로 이전예정

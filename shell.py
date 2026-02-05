@@ -1,3 +1,7 @@
+import time
+from datetime import datetime
+import threading
+
 class hlShell:
     def __init__(self, router_method):
         self.router = router_method
@@ -49,6 +53,23 @@ class hlShell:
         except KeyboardInterrupt:
             self.router.close()
 
-if __name__ == "__main__":
-    sh = hlShell()
-    sh.run_input()
+    def thread_queue_check(self):
+        #telegram [nodeName, data]
+        while self.router.runningFlag:
+            try:
+                telegram = self.router.get_telegram()
+                if telegram:
+                    current_time = datetime.now().strftime("%H:%M:%S")
+                    print('\n==========================================')
+                    print('                 전문수신                 ')
+                    print('==========================================')
+                    print(f'발신노드 : {telegram[0]} | {current_time}')
+                    print(f'전문내용 : {telegram[1]}')
+                    print('==========================================\n>>',end='')
+            except:
+                pass
+            time.sleep(0.1)#100ms
+
+    def run_thread(self):
+        checker = threading.Thread(target=self.thread_queue_check, daemon=True)
+        checker.start()

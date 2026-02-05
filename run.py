@@ -31,6 +31,7 @@ def run():
         run_router.set_my_node(selectedNode)
         run_router.open_serial(PORT, 9600)
         run_router.run_thread()
+        sh.run_thread()
         sh.run_input()
 
     else:#gui
