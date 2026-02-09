@@ -150,7 +150,7 @@ class linkGui:
         # 클릭 이벤트 (스크롤과 별개로 작동)
         lbl_title.bind("<Button-1>", lambda event, mid=msg_id: self.display_telegram(msg_id))
 
-    def set_window(self):
+    def set_window(self, nodeName:str, subnetIp:str):
         '''
         test gui
         '''
@@ -210,6 +210,8 @@ class linkGui:
         self.telegram.grid(row=1, column=0)
         self.tk.Button(self.input_frame, text='전송', width=10, command=self.send_telegram).grid(row=2, column=0)
         self.tk.Button(self.input_frame, text='종료', width=10, command=self.router.close).grid(row=3, column=0)
+        self.tk.Label(self.input_frame, text=f'가입자:{nodeName}').grid(row=4, column=0, pady=(150,0))
+        self.tk.Label(self.input_frame, text=f'Subnet IP:{subnetIp}').grid(row=5, column=0)
         self.window.after(100, self.check_queue)
         self.window.mainloop()
 

@@ -43,7 +43,7 @@ def run():
         rt.open_serial(PORT, 9600)
         rt.run_thread()
         ui = interface.linkGui(tk, rt)
-        ui.set_window()
+        ui.set_window(rt.nodeName, rt.ip)
 
 if __name__ == "__main__":
     run()
