@@ -1,8 +1,8 @@
 import router
 import shell
-import interface
 
 try:
+    import interface
     import tkinter as tk
     HEADLESS = False
     
