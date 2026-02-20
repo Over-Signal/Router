@@ -60,7 +60,7 @@ class link:
         self.nodeId = node.nodeId
         self.nodeName = node.nodeName
         self.ip = node.subnetIp
-        self.control_q.put(f'C$0${self.nodeId}')
+        self.control_q.put(f'C$0${self.nodeId}')#transceiver내 node id 지정
 
     def set_outbound_packet(self, id:int, route:object, data:str) -> packet.outboundPacket:
         seq = self.sequence.getSeq()
