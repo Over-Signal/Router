@@ -1,10 +1,11 @@
 import csv
+from dataclasses import dataclass
 
+@dataclass
 class node:
-    def __init__(self, nodeId:int, nodeName:str, IP:str) -> None:
-        self.nodeId = nodeId
-        self.nodeName = nodeName
-        self.subnetIp = IP
+    nodeId:int
+    nodeName:str
+    subnetIp:str
 
 class table:
     def __init__(self):
